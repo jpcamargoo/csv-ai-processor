@@ -294,7 +294,7 @@
 
                     const formData = new FormData();
                     formData.append('csvFile', this.selectedFile);
-                    formData.append('processingType', this.processingType);
+                    formData.append('operation', this.processingType);
 
                     try {
                         // Simular progresso durante o upload
@@ -305,7 +305,7 @@
                             }
                         }, 1000);
 
-                        const response = await fetch('/upload-csv', {
+                        const response = await fetch('/api/process', {
                             method: 'POST',
                             body: formData
                         });
