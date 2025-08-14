@@ -1,4 +1,3 @@
-const multipart = require('parse-multipart-data');
 const OpenAI = require('openai');
 
 const openai = new OpenAI({
@@ -53,50 +52,34 @@ export default async function handler(req, res) {
   }
 
   try {
-    const contentType = req.headers['content-type'];
-    
-    if (!contentType || !contentType.includes('multipart/form-data')) {
-      return res.status(400).json({ success: false, error: 'Content-Type deve ser multipart/form-data' });
-    }
-
-    const boundary = contentType.split('boundary=')[1];
-    const body = Buffer.from(req.body);
-    const parts = multipart.parse(body, boundary);
-
-    let csvContent = '';
-    let operation = 'rewrite';
-
-    // Processar partes do multipart
-    for (const part of parts) {
-      if (part.name === 'csvFile') {
-        csvContent = part.data.toString('utf8');
-      } else if (part.name === 'operation') {
-        operation = part.data.toString('utf8');
-      }
-    }
+    // Para teste simples, vamos processar dados JSON ao invés de multipart
+    const { csvContent, operation = 'rewrite' } = req.body;
 
     if (!csvContent) {
-      return res.status(400).json({ success: false, error: 'Arquivo CSV não encontrado' });
+      return res.status(400).json({ success: false, error: 'Conteúdo CSV não encontrado' });
     }
 
     // Processar CSV simples
     const lines = csvContent.split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+      return res.status(400).json({ success: false, error: 'CSV vazio' });
+    }
+
     const headers = lines[0].split(',').map(h => h.trim());
-    
     const processedLines = [lines[0]]; // Manter cabeçalho
 
-    // Processar apenas as primeiras 5 linhas para evitar timeout
-    const dataLines = lines.slice(1, Math.min(6, lines.length));
+    // Processar apenas as primeiras 3 linhas para evitar timeout
+    const dataLines = lines.slice(1, Math.min(4, lines.length));
     
     for (const line of dataLines) {
       const values = line.split(',');
       const processedValues = [];
       
       for (let i = 0; i < values.length; i++) {
-        const value = values[i]?.trim();
-        if (value && value.length > 10 && typeof value === 'string') {
+        const value = values[i]?.trim().replace(/"/g, '');
+        if (value && value.length > 10 && isNaN(value)) {
           const processed = await processText(value, operation);
-          processedValues.push(processed);
+          processedValues.push(`"${processed}"`);
         } else {
           processedValues.push(value);
         }
