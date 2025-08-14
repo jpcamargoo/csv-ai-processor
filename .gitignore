@@ -1,0 +1,30 @@
+# Logs
+*.log
+npm-debug.log*
+
+# Dependências
+node_modules/
+package-lock.json
+
+# Arquivos de ambiente
+.env
+.env.local
+
+# Arquivos temporários
+uploads/
+outputs/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Builds
+dist/
+build/
+
+# Vercel
+.vercel
