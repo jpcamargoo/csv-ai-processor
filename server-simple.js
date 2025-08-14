@@ -147,6 +147,71 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Rota da API process (compatível com Vercel)
+app.post('/api/process', async (req, res) => {
+  try {
+    const { csvContent, operation = 'rewrite' } = req.body;
+
+    if (!csvContent) {
+      return res.status(400).json({ success: false, error: 'Conteúdo CSV não encontrado' });
+    }
+
+    // Processar CSV simples
+    const lines = csvContent.split('\n').filter(line => line.trim());
+    if (lines.length === 0) {
+      return res.status(400).json({ success: false, error: 'CSV vazio' });
+    }
+
+    const headers = lines[0].split(',').map(h => h.trim());
+    const processedLines = [lines[0]]; // Manter cabeçalho
+
+    // Processar apenas as primeiras 3 linhas para evitar timeout
+    const dataLines = lines.slice(1, Math.min(4, lines.length));
+    
+    for (const line of dataLines) {
+      const values = line.split(',');
+      const processedValues = [];
+      
+      for (let i = 0; i < values.length; i++) {
+        const value = values[i]?.trim().replace(/"/g, '');
+        if (value && value.length > 10 && isNaN(value)) {
+          const processed = await processText(value, operation);
+          processedValues.push(`"${processed}"`);
+        } else {
+          processedValues.push(value);
+        }
+      }
+      
+      processedLines.push(processedValues.join(','));
+    }
+
+    const processedCsv = processedLines.join('\n');
+
+    res.json({
+      success: true,
+      data: processedCsv,
+      filename: `processed_${operation}_${Date.now()}.csv`,
+      downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent(processedCsv)}`
+    });
+
+  } catch (error) {
+    console.error('Erro no processamento:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: `Erro no processamento: ${error.message}` 
+    });
+  }
+});
+
+// Rota health check
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    message: 'CSV AI Processor API funcionando!'
+  });
+});
+
 // Catch-all para arquivos estáticos
 app.get('*', (req, res) => {
   const filePath = path.join(__dirname, 'public', req.path);
