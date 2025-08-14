@@ -419,9 +419,14 @@ app.get('/download/:filename', (req, res) => {
   }
 });
 
-// Iniciar servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
-  console.log(`📁 Upload de CSV: POST /upload-csv`);
-  console.log(`💾 Downloads em: /download/:filename`);
-});
+// Iniciar servidor apenas se não estiver no Vercel
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Servidor rodando em http://localhost:${PORT}`);
+    console.log(`📁 Upload de CSV: POST /upload-csv`);
+    console.log(`💾 Downloads em: /download/:filename`);
+  });
+}
+
+// Exportar para Vercel
+module.exports = app;

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "server.js",
+      "src": "api/index.js",
       "use": "@vercel/node"
     },
     {
@@ -12,20 +12,8 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/server.js"
-    },
-    {
-      "src": "/upload-csv",
-      "dest": "/server.js"
-    },
-    {
-      "src": "/download/(.*)",
-      "dest": "/server.js"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/server.js"
+      "dest": "/api/index.js"
     }
   ]
 }
