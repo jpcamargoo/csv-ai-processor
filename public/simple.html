@@ -97,18 +97,16 @@
         <!-- Results -->
         <div x-show="result" class="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
             <h2 class="text-xl font-semibold text-gray-800 mb-6">✅ Processamento Concluído!</h2>
-            
             <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
                 <p class="text-green-800 font-medium mb-2">Arquivo processado com sucesso!</p>
                 <p class="text-green-700 text-sm">Clique no botão abaixo para baixar o CSV processado.</p>
+                <p class="text-green-700 text-xs mt-2">Formato: <b>Excel UTF-8 (delimitado por vírgulas)</b> — compatível com Microsoft Excel, Google Sheets e LibreOffice.</p>
             </div>
-
             <div class="flex gap-4">
-                <button @click="downloadCSV" 
+                <button @click="downloadCSVExcel" 
                         class="flex-1 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-medium">
-                    📥 Baixar CSV Processado
+                    📥 Baixar para Excel (.csv UTF-8)
                 </button>
-                
                 <button @click="reset" 
                         class="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium">
                     🔄 Processar Novo Arquivo
@@ -222,12 +220,14 @@
                     }
                 },
 
-                downloadCSV() {
-                    if (!this.result || !this.result.downloadUrl) return;
-
+                downloadCSVExcel() {
+                    if (!this.result || !this.result.data) return;
+                    // Garante encoding UTF-8 e nome compatível
+                    const csvData = '\uFEFF' + this.result.data; // BOM UTF-8
+                    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement('a');
-                    link.href = this.result.downloadUrl;
-                    link.download = this.result.filename || 'processed.csv';
+                    link.href = URL.createObjectURL(blob);
+                    link.download = 'processed_excel_utf8.csv';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
