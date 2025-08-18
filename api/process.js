@@ -94,15 +94,46 @@ export default async function handler(req, res) {
       });
     }
 
-    // Processar CSV simples
+    // Processar CSV com parsing adequado
     const lines = csvContent.split('\n').filter(line => line.trim());
     
     if (lines.length === 0) {
       return res.status(400).json({ success: false, error: 'CSV vazio' });
     }
 
-    const headers = lines[0];
-    const processedLines = [headers];
+    // Função para parsing correto de CSV
+    function parseCSVLine(line) {
+      const result = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      
+      result.push(current.trim());
+      return result;
+    }
+
+    // Função para escapar valores CSV
+    function escapeCSVValue(value) {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    }
+
+    const headers = parseCSVLine(lines[0]);
+    const processedLines = [headers.map(h => escapeCSVValue(h)).join(',')];
     
     // Processar apenas algumas linhas para evitar timeout
     const maxLines = Math.min(3, lines.length - 1);
@@ -111,17 +142,17 @@ export default async function handler(req, res) {
       const line = lines[i];
       if (!line) continue;
       
-      const values = line.split(',');
+      const values = parseCSVLine(line);
       const processedValues = [];
       
       for (const value of values) {
-        const cleanValue = value.trim().replace(/"/g, '');
+        const cleanValue = value.replace(/^"|"$/g, '').trim();
         
         if (cleanValue && cleanValue.length > 10 && isNaN(cleanValue)) {
           const processed = await processText(cleanValue, operation);
-          processedValues.push(`"${processed}"`);
+          processedValues.push(escapeCSVValue(processed));
         } else {
-          processedValues.push(value);
+          processedValues.push(escapeCSVValue(cleanValue));
         }
       }
       
@@ -135,8 +166,9 @@ export default async function handler(req, res) {
       success: true,
       data: result,
       filename: filename,
-      downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent('\uFEFF' + result)}`,
-      message: `CSV processado com ${operation}`
+      downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent(result)}`,
+      message: `CSV processado com ${operation}`,
+      preview: processedLines.slice(0, 6).map(line => parseCSVLine(line))
     });
 
   } catch (error) {

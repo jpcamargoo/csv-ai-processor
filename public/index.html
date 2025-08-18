@@ -109,25 +109,39 @@
             <h3 class="text-xl font-semibold mb-4">✅ Processamento Concluído</h3>
             <!-- Download Buttons -->
             <div x-show="downloadUrl || (result && result.data)" class="mb-6 space-y-4">
-                <!-- Excel CSV Download -->
+                <!-- Excel CSV Download (Recomendado) -->
                 <div class="border border-green-300 rounded-lg p-4 bg-green-50">
                     <div class="flex items-center mb-2">
-                        <span class="text-2xl mr-2">📈</span>
-                        <h3 class="font-semibold text-gray-800">Excel CSV (Recomendado)</h3>
+                        <span class="text-2xl mr-2">�</span>
+                        <h3 class="font-semibold text-gray-800">Excel CSV Brasileiro (Ponto e Vírgula)</h3>
                     </div>
-                    <p class="text-sm text-gray-600 mb-3">Formato otimizado para Microsoft Excel com codificação UTF-8.</p>
+                    <p class="text-sm text-gray-600 mb-3">Formato específico para Excel brasileiro/europeu com separador de ponto e vírgula.</p>
                     <button @click="downloadExcelCSV" 
                             :disabled="!result || !result.data"
                             class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
-                        📥 Baixar Excel CSV (UTF-8)
+                        📥 Baixar para Excel (UTF-8 + Ponto e Vírgula)
                     </button>
                 </div>
 
                 <!-- Standard CSV Download -->
-                <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                <div class="border border-blue-300 rounded-lg p-4 bg-blue-50">
                     <div class="flex items-center mb-2">
                         <span class="text-2xl mr-2">📄</span>
-                        <h3 class="font-semibold text-gray-800">CSV Padrão</h3>
+                        <h3 class="font-semibold text-gray-800">CSV Padrão (Vírgula)</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Formato CSV internacional com separador de vírgula.</p>
+                    <button @click="downloadStandardCSV" 
+                            :disabled="!result || !result.data"
+                            class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        📥 Baixar CSV Padrão (UTF-8)
+                    </button>
+                </div>
+
+                <!-- Server Download (Backup) -->
+                <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div class="flex items-center mb-2">
+                        <span class="text-2xl mr-2">�</span>
+                        <h3 class="font-semibold text-gray-800">Download via Servidor</h3>
                     </div>
                     <p class="text-sm text-gray-600 mb-3">Download via URL do servidor (método anterior).</p>
                     <a 
@@ -135,7 +149,7 @@
                         x-show="downloadUrl"
                         class="inline-flex items-center justify-center w-full bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition duration-200"
                     >
-                        📥 Baixar CSV Padrão
+                        📥 Baixar via Servidor
                     </a>
                 </div>
             </div>
@@ -405,7 +419,29 @@
                         return;
                     }
                     
-                    // BOM UTF-8 para garantir compatibilidade com Excel
+                    // Para Excel brasileiro: BOM UTF-8 + separador de ponto e vírgula
+                    const csvData = '\uFEFF' + this.result.data.replace(/,/g, ';');
+                    const blob = new Blob([csvData], { 
+                        type: 'text/csv;charset=utf-8;' 
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `processed_${this.processingType}_excel_ptbr_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    alert('📥 Download do Excel CSV (ponto e vírgula) iniciado!');
+                },
+
+                downloadStandardCSV() {
+                    if (!this.result || !this.result.data) {
+                        alert('Nenhum dado processado disponível para download.');
+                        return;
+                    }
+                    
+                    // CSV padrão com BOM UTF-8 e vírgula como separador
                     const csvData = '\uFEFF' + this.result.data;
                     const blob = new Blob([csvData], { 
                         type: 'text/csv;charset=utf-8;' 
@@ -413,12 +449,12 @@
                     
                     const link = document.createElement('a');
                     link.href = URL.createObjectURL(blob);
-                    link.download = `processed_${this.processingType}_excel_utf8_${new Date().toISOString().slice(0,10)}.csv`;
+                    link.download = `processed_${this.processingType}_standard_utf8_${new Date().toISOString().slice(0,10)}.csv`;
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
                     
-                    alert('📥 Download do Excel CSV UTF-8 iniciado!');
+                    alert('📥 Download do CSV padrão (vírgula) iniciado!');
                 },
 
                 showNotification(message, type = 'info') {
