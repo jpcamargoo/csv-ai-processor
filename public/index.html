@@ -107,16 +107,37 @@
         <!-- Results Section -->
         <div x-show="results" class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg p-6 mb-8">
             <h3 class="text-xl font-semibold mb-4">✅ Processamento Concluído</h3>
-            
-            <!-- Download Button -->
-            <div class="mb-6">
-                <a 
-                    :href="downloadUrl" 
-                    x-show="downloadUrl"
-                    class="inline-flex items-center bg-green-600 text-white py-2 px-4 rounded-md font-semibold hover:bg-green-700 transition duration-200"
-                >
-                    📥 Baixar CSV Processado
-                </a>
+            <!-- Download Buttons -->
+            <div x-show="downloadUrl || (result && result.data)" class="mb-6 space-y-4">
+                <!-- Excel CSV Download -->
+                <div class="border border-green-300 rounded-lg p-4 bg-green-50">
+                    <div class="flex items-center mb-2">
+                        <span class="text-2xl mr-2">📈</span>
+                        <h3 class="font-semibold text-gray-800">Excel CSV (Recomendado)</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Formato otimizado para Microsoft Excel com codificação UTF-8.</p>
+                    <button @click="downloadExcelCSV" 
+                            :disabled="!result || !result.data"
+                            class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        📥 Baixar Excel CSV (UTF-8)
+                    </button>
+                </div>
+
+                <!-- Standard CSV Download -->
+                <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div class="flex items-center mb-2">
+                        <span class="text-2xl mr-2">📄</span>
+                        <h3 class="font-semibold text-gray-800">CSV Padrão</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Download via URL do servidor (método anterior).</p>
+                    <a 
+                        :href="downloadUrl" 
+                        x-show="downloadUrl"
+                        class="inline-flex items-center justify-center w-full bg-gray-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-gray-700 transition duration-200"
+                    >
+                        📥 Baixar CSV Padrão
+                    </a>
+                </div>
             </div>
 
             <!-- Preview Table -->
@@ -182,6 +203,7 @@
                 preview: [],
                 processingType: 'rewrite',
                 selectedFile: null,
+                result: null,
 
                 readFileAsText(file) {
                     return new Promise((resolve, reject) => {
@@ -343,6 +365,7 @@
                             this.downloadUrl = result.downloadUrl;
                             this.preview = result.preview || [];
                             this.results = true;
+                            this.result = result; // Armazenar resultado completo para download
                             
                             // Scroll para os resultados
                             setTimeout(() => {
@@ -374,6 +397,33 @@
                     } finally {
                         this.processing = false;
                     }
+                },
+
+                downloadExcelCSV() {
+                    if (!this.result || !this.result.data) {
+                        alert('Nenhum dado processado disponível para download.');
+                        return;
+                    }
+                    
+                    // BOM UTF-8 para garantir compatibilidade com Excel
+                    const csvData = '\uFEFF' + this.result.data;
+                    const blob = new Blob([csvData], { 
+                        type: 'text/csv;charset=utf-8;' 
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `processed_${this.processingType}_excel_utf8_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    alert('📥 Download do Excel CSV UTF-8 iniciado!');
+                },
+
+                showNotification(message, type = 'info') {
+                    // Função auxiliar para compatibilidade
+                    console.log(`${type.toUpperCase()}: ${message}`);
                 }
             }
         }
