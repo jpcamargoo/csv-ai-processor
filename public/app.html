@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV + IA Processor - Excel UTF-8 Compatible</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div x-data="csvProcessor()" class="container mx-auto px-6 py-8 max-w-4xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-4">
+                <span class="text-white font-bold text-xl">CSV</span>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">CSV + IA Processor</h1>
+            <p class="text-gray-600">Enriqueça seus dados CSV com Inteligência Artificial</p>
+            <div class="inline-flex items-center bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm mt-2">
+                <span class="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                Excel UTF-8 Compatible
+            </div>
+        </div>
+
+        <!-- Status da API -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
+            <div class="flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-gray-800">Status do Sistema</h2>
+                <button @click="testAPI" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                    Testar API
+                </button>
+            </div>
+            <div class="mt-4">
+                <div class="flex items-center" :class="apiStatus === 'ok' ? 'text-green-600' : 'text-red-600'">
+                    <div class="w-3 h-3 rounded-full mr-2" :class="apiStatus === 'ok' ? 'bg-green-500 animate-pulse' : 'bg-red-500'"></div>
+                    <span x-text="apiStatus === 'ok' ? '✅ API Funcionando' : '❌ API com Problemas'"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-6 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6">📁 Upload do Arquivo CSV</h2>
+            
+            <!-- File Input -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Selecione seu arquivo CSV:</label>
+                <input type="file" accept=".csv" @change="handleFileSelect" 
+                       class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 transition-colors">
+                <p class="text-xs text-gray-500 mt-2">Formatos aceitos: .csv | Tamanho máximo: 10MB</p>
+            </div>
+
+            <!-- File Preview -->
+            <div x-show="csvContent" class="mb-6 bg-gray-50 rounded-lg p-4">
+                <h3 class="text-sm font-medium text-gray-700 mb-2">📋 Preview do arquivo:</h3>
+                <div class="bg-white rounded border p-3 text-xs font-mono max-h-32 overflow-y-auto">
+                    <span x-text="csvContent.substring(0, 300) + (csvContent.length > 300 ? '...' : '')"></span>
+                </div>
+                <p class="text-xs text-gray-500 mt-2" x-text="`${csvContent.split('\\n').length} linhas detectadas`"></p>
+            </div>
+
+            <!-- Processing Options -->
+            <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-3">🤖 Tipo de Processamento IA</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors" :class="operation === 'rewrite' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'">
+                        <input type="radio" name="operation" value="rewrite" x-model="operation" class="mr-3">
+                        <div>
+                            <div class="font-semibold text-blue-700">✍️ Reescrever</div>
+                            <div class="text-sm text-gray-600">Melhora a redação e clareza</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors" :class="operation === 'summary' ? 'border-green-500 bg-green-50' : 'border-gray-300 hover:border-gray-400'">
+                        <input type="radio" name="operation" value="summary" x-model="operation" class="mr-3">
+                        <div>
+                            <div class="font-semibold text-green-700">📝 Resumir</div>
+                            <div class="text-sm text-gray-600">Cria versões concisas</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-colors" :class="operation === 'expand' ? 'border-purple-500 bg-purple-50' : 'border-gray-300 hover:border-gray-400'">
+                        <input type="radio" name="operation" value="expand" x-model="operation" class="mr-3">
+                        <div>
+                            <div class="font-semibold text-purple-700">📈 Expandir</div>
+                            <div class="text-sm text-gray-600">Adiciona detalhes e contexto</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Process Button -->
+            <div class="text-center">
+                <button @click="processCSV" :disabled="!csvContent || processing" 
+                        class="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105">
+                    <span x-show="!processing" class="flex items-center justify-center">
+                        <span class="mr-2">🚀</span> Processar com IA
+                    </span>
+                    <span x-show="processing" class="flex items-center justify-center">
+                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Processando...
+                    </span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress -->
+        <div x-show="processing" class="bg-white rounded-xl shadow-lg p-6 mb-6 border border-gray-200">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-sm font-medium text-gray-700">Processando com IA...</span>
+                <span class="text-sm text-gray-500" x-text="progress + '%'"></span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 h-3 rounded-full transition-all duration-500" :style="'width: ' + progress + '%'"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-2" x-text="statusMessage"></p>
+        </div>
+
+        <!-- Results -->
+        <div x-show="result" class="bg-white rounded-xl shadow-lg p-8 border border-gray-200">
+            <h2 class="text-xl font-semibold text-gray-800 mb-6">✅ Processamento Concluído!</h2>
+            
+            <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6 mb-6">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-4">
+                        <span class="text-green-600 text-xl">📊</span>
+                    </div>
+                    <div>
+                        <p class="text-green-800 font-medium mb-2">Arquivo processado com sucesso!</p>
+                        <p class="text-green-700 text-sm mb-2">Seu CSV foi enriquecido com IA e está pronto para download.</p>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <span class="bg-green-200 text-green-800 px-2 py-1 rounded">✅ Excel Compatible</span>
+                            <span class="bg-green-200 text-green-800 px-2 py-1 rounded">✅ UTF-8 Encoding</span>
+                            <span class="bg-green-200 text-green-800 px-2 py-1 rounded">✅ Comma Delimited</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Download Options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <!-- Excel CSV Option -->
+                <div class="border-2 border-green-500 rounded-lg p-4 bg-green-50">
+                    <div class="flex items-center mb-2">
+                        <span class="text-2xl mr-2">📈</span>
+                        <h3 class="font-semibold text-gray-800">Excel CSV (Recomendado)</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Formato otimizado para Microsoft Excel, Google Sheets e LibreOffice Calc.</p>
+                    <button @click="downloadExcelCSV" 
+                            class="w-full bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 font-medium transition-colors">
+                        📥 Baixar Excel CSV (UTF-8)
+                    </button>
+                </div>
+
+                <!-- Standard CSV Option -->
+                <div class="border border-gray-300 rounded-lg p-4 bg-gray-50">
+                    <div class="flex items-center mb-2">
+                        <span class="text-2xl mr-2">📄</span>
+                        <h3 class="font-semibold text-gray-800">CSV Padrão</h3>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-3">Formato CSV padrão para uso geral e compatibilidade máxima.</p>
+                    <button @click="downloadStandardCSV" 
+                            class="w-full bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                        📥 Baixar CSV Padrão
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-4">
+                <button @click="reset" 
+                        class="flex-1 bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 font-medium transition-colors">
+                    🔄 Processar Novo Arquivo
+                </button>
+                <button @click="viewPreview" 
+                        class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors">
+                    👀 Visualizar Dados
+                </button>
+            </div>
+        </div>
+
+        <!-- Preview Modal -->
+        <div x-show="showPreview" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click="closePreview">
+            <div class="bg-white rounded-lg p-6 max-w-4xl max-h-96 overflow-auto" @click.stop>
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold">Preview dos Dados Processados</h3>
+                    <button @click="closePreview" class="text-gray-500 hover:text-gray-700">✕</button>
+                </div>
+                <div class="bg-gray-50 rounded p-4 text-xs font-mono max-h-64 overflow-auto">
+                    <span x-text="result?.data || ''"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function csvProcessor() {
+            return {
+                csvContent: '',
+                operation: 'rewrite',
+                processing: false,
+                progress: 0,
+                statusMessage: '',
+                result: null,
+                apiStatus: 'unknown',
+                showPreview: false,
+
+                async testAPI() {
+                    try {
+                        const response = await fetch('/api/health');
+                        if (response.ok) {
+                            this.apiStatus = 'ok';
+                            this.showNotification('✅ API funcionando corretamente!', 'success');
+                        } else {
+                            this.apiStatus = 'error';
+                            this.showNotification('❌ Erro na API: ' + response.status, 'error');
+                        }
+                    } catch (error) {
+                        this.apiStatus = 'error';
+                        console.error('Erro ao testar API:', error);
+                        this.showNotification('❌ Erro ao conectar com a API: ' + error.message, 'error');
+                    }
+                },
+
+                handleFileSelect(event) {
+                    const file = event.target.files[0];
+                    if (!file) return;
+
+                    if (!file.name.endsWith('.csv')) {
+                        this.showNotification('Por favor, selecione um arquivo CSV', 'error');
+                        return;
+                    }
+
+                    if (file.size > 10 * 1024 * 1024) {
+                        this.showNotification('Arquivo muito grande. Máximo: 10MB', 'error');
+                        return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        this.csvContent = e.target.result;
+                        console.log('CSV carregado:', this.csvContent.substring(0, 200) + '...');
+                        this.showNotification('✅ Arquivo carregado com sucesso!', 'success');
+                    };
+                    reader.readAsText(file, 'UTF-8');
+                },
+
+                async processCSV() {
+                    if (!this.csvContent) {
+                        this.showNotification('Por favor, selecione um arquivo CSV primeiro', 'error');
+                        return;
+                    }
+
+                    this.processing = true;
+                    this.progress = 0;
+                    this.result = null;
+                    this.statusMessage = 'Iniciando processamento...';
+
+                    // Simular progresso
+                    const progressInterval = setInterval(() => {
+                        if (this.progress < 90) {
+                            this.progress += Math.random() * 15;
+                            const operationNames = {
+                                'rewrite': 'reescrevendo',
+                                'summary': 'resumindo',
+                                'expand': 'expandindo'
+                            };
+                            this.statusMessage = `IA ${operationNames[this.operation]} conteúdo... ${Math.round(this.progress)}%`;
+                        }
+                    }, 500);
+
+                    try {
+                        const response = await fetch('/api/process', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                csvContent: this.csvContent,
+                                operation: this.operation
+                            })
+                        });
+
+                        clearInterval(progressInterval);
+                        this.progress = 100;
+                        this.statusMessage = 'Processamento concluído!';
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            throw new Error(`Erro ${response.status}: ${errorText}`);
+                        }
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            this.result = result;
+                            this.showNotification('🎉 Processamento concluído com sucesso!', 'success');
+                            setTimeout(() => {
+                                this.processing = false;
+                            }, 1000);
+                        } else {
+                            throw new Error(result.error || 'Erro desconhecido');
+                        }
+
+                    } catch (error) {
+                        clearInterval(progressInterval);
+                        console.error('Erro no processamento:', error);
+                        this.showNotification('❌ Erro no processamento: ' + error.message, 'error');
+                        this.processing = false;
+                        this.progress = 0;
+                    }
+                },
+
+                downloadExcelCSV() {
+                    if (!this.result || !this.result.data) return;
+                    
+                    // BOM UTF-8 para garantir compatibilidade com Excel
+                    const csvData = '\uFEFF' + this.result.data;
+                    const blob = new Blob([csvData], { 
+                        type: 'text/csv;charset=utf-8;' 
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `processed_${this.operation}_excel_utf8_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    this.showNotification('📥 Download do Excel CSV iniciado!', 'success');
+                },
+
+                downloadStandardCSV() {
+                    if (!this.result || !this.result.data) return;
+                    
+                    const blob = new Blob([this.result.data], { 
+                        type: 'text/csv;charset=utf-8;' 
+                    });
+                    
+                    const link = document.createElement('a');
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `processed_${this.operation}_standard_${new Date().toISOString().slice(0,10)}.csv`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    this.showNotification('📥 Download do CSV padrão iniciado!', 'success');
+                },
+
+                viewPreview() {
+                    this.showPreview = true;
+                },
+
+                closePreview() {
+                    this.showPreview = false;
+                },
+
+                reset() {
+                    this.csvContent = '';
+                    this.processing = false;
+                    this.progress = 0;
+                    this.statusMessage = '';
+                    this.result = null;
+                    this.showPreview = false;
+                    
+                    // Reset file input
+                    const fileInput = document.querySelector('input[type="file"]');
+                    if (fileInput) fileInput.value = '';
+                    
+                    this.showNotification('🔄 Sistema resetado. Pronto para novo arquivo!', 'info');
+                },
+
+                showNotification(message, type = 'info') {
+                    // Simple notification system
+                    const colors = {
+                        success: 'bg-green-500',
+                        error: 'bg-red-500',
+                        info: 'bg-blue-500'
+                    };
+                    
+                    const notification = document.createElement('div');
+                    notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-6 py-3 rounded-lg shadow-lg z-50 transition-all`;
+                    notification.textContent = message;
+                    
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.remove();
+                    }, 4000);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

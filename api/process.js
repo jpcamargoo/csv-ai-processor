@@ -1,4 +1,4 @@
-// Função para processar texto com IA (versão simplificada)
+// Função para processar texto com IA (versão otimizada)
 async function processText(text, operation) {
   try {
     // Se não tem OpenAI configurada, usar processamento mock
@@ -24,13 +24,13 @@ async function processText(text, operation) {
     let prompt;
     switch (operation) {
       case 'rewrite':
-        prompt = `Reescreva: "${text}"`;
+        prompt = `Reescreva o seguinte texto de forma clara e profissional, mantendo o mesmo sentido: "${text}"`;
         break;
       case 'summary':
-        prompt = `Resuma: "${text}"`;
+        prompt = `Crie um resumo conciso e informativo do seguinte texto: "${text}"`;
         break;
       case 'expand':
-        prompt = `Expanda: "${text}"`;
+        prompt = `Expanda o seguinte texto com mais detalhes, contexto e informações relevantes: "${text}"`;
         break;
       default:
         return text;
@@ -39,7 +39,7 @@ async function processText(text, operation) {
     const response = await openai.chat.completions.create({
       model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
-      max_tokens: 200,
+      max_tokens: 300,
       temperature: 0.7
     });
 
@@ -74,7 +74,12 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
-      return res.json({ success: true, message: 'API funcionando!', timestamp: new Date() });
+      return res.json({ 
+        success: true, 
+        message: 'API funcionando!', 
+        timestamp: new Date(),
+        features: ['Excel UTF-8', 'CSV Processing', 'AI Enhancement']
+      });
     }
 
     if (req.method !== 'POST') {
@@ -94,29 +99,42 @@ export default async function handler(req, res) {
 
     console.log('Processando CSV:', csvContent.substring(0, 100), 'Operação:', operation);
 
-    // Processar CSV de forma muito simples
+    // Processar CSV de forma mais robusta
     const lines = csvContent.split('\n').filter(line => line.trim());
     
     if (lines.length === 0) {
       return res.status(400).json({ success: false, error: 'CSV vazio' });
     }
 
-    // Processar apenas primeira linha de dados para teste
-    const headers = lines[0];
-    const processedLines = [headers];
+    // Detectar delimitador (vírgula ou ponto e vírgula)
+    const firstLine = lines[0];
+    const delimiter = firstLine.includes(';') && firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
     
-    if (lines.length > 1) {
-      const firstDataLine = lines[1];
-      const values = firstDataLine.split(',');
+    const headers = firstLine.split(delimiter).map(h => h.trim().replace(/"/g, ''));
+    const processedLines = [headers.map(h => `"${h}"`).join(',')]; // Cabeçalho sempre com vírgulas
+    
+    // Processar linhas de dados (limitar para evitar timeout)
+    const maxLines = Math.min(10, lines.length - 1);
+    const dataLines = lines.slice(1, maxLines + 1);
+    
+    for (const line of dataLines) {
+      const values = line.split(delimiter);
       const processedValues = [];
       
-      for (const value of values) {
-        const cleanValue = value.trim().replace(/"/g, '');
-        if (cleanValue && cleanValue.length > 5 && isNaN(cleanValue)) {
-          const processed = await processText(cleanValue, operation);
-          processedValues.push(`"${processed}"`);
+      for (let i = 0; i < values.length; i++) {
+        const value = values[i]?.trim().replace(/"/g, '');
+        
+        // Processar apenas textos significativos
+        if (value && value.length > 10 && isNaN(value) && !/^\d{4}-\d{2}-\d{2}/.test(value)) {
+          try {
+            const processed = await processText(value, operation);
+            processedValues.push(`"${processed.replace(/"/g, '""')}"`); // Escape aspas duplas
+          } catch (error) {
+            console.error('Erro ao processar texto:', error);
+            processedValues.push(`"${value}"`);
+          }
         } else {
-          processedValues.push(value);
+          processedValues.push(value ? `"${value}"` : '""');
         }
       }
       
@@ -124,16 +142,22 @@ export default async function handler(req, res) {
     }
 
     const result = processedLines.join('\n');
-    const filename = `processed_${operation}_${Date.now()}.csv`;
+    const filename = `processed_${operation}_excel_utf8_${Date.now()}.csv`;
 
-    console.log('Processamento concluído:', result.length, 'characters');
+    console.log('Processamento concluído:', result.length, 'characters,', processedLines.length, 'lines');
 
     return res.json({
       success: true,
       data: result,
       filename: filename,
-      downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent(result)}`,
-      message: `CSV processado com ${operation} - ${lines.length} linhas`
+      downloadUrl: `data:text/csv;charset=utf-8,${encodeURIComponent('\uFEFF' + result)}`, // BOM para Excel
+      message: `CSV processado com ${operation} - ${processedLines.length} linhas`,
+      stats: {
+        originalLines: lines.length,
+        processedLines: processedLines.length - 1, // Excluir cabeçalho
+        operation: operation,
+        timestamp: new Date().toISOString()
+      }
     });
 
   } catch (error) {
