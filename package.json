@@ -1,12 +1,11 @@
 {
-  "name": "csv-ai-processor-vercel",
+  "name": "csv-ai-processor",
   "version": "2.1.0",
-  "description": "🚀 CSV AI Processor v2.1 - EDITADO DIRETAMENTE PELO COPILOT",
+  "description": "🚀 CSV AI Processor v2.1 - Processamento inteligente de CSV com IA",
   "main": "api/process.js",
   "scripts": {
-    "start": "node server-simple.js",
-    "dev": "node server-simple.js",
-    "build": "echo '🚀 Build v2.1 completed - COPILOT EDITION'"
+    "build": "echo '✅ Build concluído - v2.1'",
+    "start": "echo '🚀 Aplicação rodando no Vercel'"
   },
   "dependencies": {
     "openai": "^4.20.1"
@@ -14,6 +13,7 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "keywords": ["csv", "ai", "processor", "openai", "vercel", "copilot"],
-  "author": "GitHub Copilot Agent"
+  "keywords": ["csv", "ai", "processor", "openai", "vercel"],
+  "author": "GitHub Copilot Agent",
+  "license": "MIT"
 }

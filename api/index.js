@@ -1,3 +1,4 @@
+// 🚀 CSV + IA Processor v2.1 - API Info
 export default function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -8,12 +9,15 @@ export default function handler(req, res) {
   }
 
   res.json({
-    success: true,
-    message: 'CSV AI Processor API funcionando!',
-    timestamp: new Date().toISOString(),
+    name: "CSV + IA Processor",
+    version: "2.1.0",
+    status: "active",
+    message: "🚀 API funcionando! Editado pelo GitHub Copilot",
     endpoints: {
-      health: '/api/health',
-      process: '/api/process'
-    }
+      main: "/",
+      api: "/api",
+      process: "/api/process"
+    },
+    timestamp: new Date().toISOString()
   });
 }
