@@ -1,4 +1,4 @@
-# 🚀 CSV + IA Processor v2.1 - COPILOT EDITION
+# 🚀 CSV + IA Processor v2.1 
 
 > **Aplicação web para processamento inteligente de arquivos CSV com IA**  
 > **🤖 Editado diretamente pelo GitHub Copilot Agent**
@@ -27,9 +27,6 @@
 1. **Fork/Clone** este repositório
 2. **Conecte ao Vercel** via GitHub
 3. **Configure variável** (opcional):
-   ```env
-   OPENAI_API_KEY=sua_chave_openai
-   ```
 4. **Deploy automático** 🎉
 
 ### 🌐 URLs de Acesso
@@ -39,23 +36,7 @@
 ## 💻 Desenvolvimento Local
 ## 💻 Desenvolvimento Local
 
-```bash
-# 📦 Instalar dependências
-npm install
 
-# 🔥 Executar localmente (desenvolvimento)
-npm run dev
-
-# 🏗️ Build para produção
-npm run build
-```
-
-## 🔑 Configuração OpenAI (Opcional)
-
-Crie arquivo `.env.local` na raiz:
-```env
-OPENAI_API_KEY=sk-...sua_chave_openai...
-```
 
 > **💡 Nota Importante**: A aplicação funciona perfeitamente mesmo **SEM** OpenAI, usando processamento local inteligente!
 
@@ -139,20 +120,17 @@ nome,email,empresa
 3. ⚙️ Configure no Vercel ou `.env.local`
 4. 💳 Verifique créditos na conta
 
-## 📞 Suporte e Créditos
-
-Esta aplicação foi **criada e otimizada** pelo **GitHub Copilot Agent**.
 
 ### 🏷️ Versões
 - `v1.0`: Versão inicial básica
 - `v2.0`: Melhorias de interface  
-- `v2.1`: **COPILOT EDITION** - Edição direta do agente
+
 
 ### 📄 Licença
 MIT License - Uso livre para projetos pessoais e comerciais
 
 ---
 
-**🎉 Versão 2.1 - Deploy Ativo - Editado Diretamente pelo GitHub Copilot Agent 🤖**
+
 
 > 💡 **Dica**: Procure pelo banner "🚀 DEPLOY v2.1 ATIVO" na aplicação para confirmar que esta versão está rodando!
